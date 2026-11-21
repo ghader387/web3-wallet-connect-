@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد رصد KitchenGo</title>
+    
+    <!-- کتابخانه TronWeb -->
+    <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .card {
+            background-color: #1e293b;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #334155;
+            width: 90%;
+            max-width: 400px;
+        }
+        h2 { color: #38bdf8; margin-top: 0; margin-bottom: 20px;}
+        
+        /* استایل کیو آر کد */
+        .qr-container {
+            background-color: white;
+            padding: 10px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .qr-container img {
+            width: 150px;
+            height: 150px;
+        }
+
+        .address-box {
+            font-family: monospace;
+            background-color: #0f172a;
+            padding: 10px;
+            border-radius: 8px;
+            direction: ltr;
+            font-size: 11px;
+            color: #94a3b8;
+            margin-bottom: 20px;
+            word-break: break-all;
+        }
+        .balance-item {
+            background-color: #334155;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .coin-name { color: #cbd5e1; }
+        .coin-amount { color: #4ade80; font-family: monospace; font-size: 20px;}
+        
+        .status-bar {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #94a3b8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
+        .dot {
+            height: 8px;
+            width: 8px;
+            background-color: #4ade80;
+            border-radius: 50%;
+            display: inline-block;
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>💰 کیف پول KitchenGo</h2>
+        
+        <!-- اینجا می‌توانید لینک عکس کیو آر کد خودتان را بگذارید -->
+        <!-- فعلاً یک کیو آر کد ساده از یک سایت گذاشتم تا ظاهر را ببینید -->
+        <div class="qr-container">
+           <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TXU41F4Y1TkUggM7SX589abP7HCfnyvTt1" alt="QR Code">
+        </div>
+
+        <div class="address-box" id="walletAddress">
+            TXU41F4Y1TkUggM7SX589abP7HCfnyvTt1
+        </div>
+
+        <div class="balance-item">
+            <span class="coin-name">تتر (USDT)</span>
+            <span class="coin-amount" id="usdtBalance">...</span>
+        </div>
+
+        <div class="balance-item">
+            <span class="coin-name">ترون (TRX)</span>
+            <span class="coin-amount" id="trxBalance">...</span>
+        </div>
+
+        <div class="status-bar">
+            <span class="dot"></span> در حال رصد خودکار شبکه...
+        </div>
+    </div>
+
+    <script>
+        const myWalletAddress = "TXU41F4Y1TkUggM7SX589abP7HCfnyvTt1";
+        const usdtContractAddress = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
+
+        const tronWeb = new TronWeb({
+            fullHost: 'https://api.trongrid.io'
+        });
+
+        async function getBalances() {
+            const usdtSpan = document.getElementById('usdtBalance');
+            const trxSpan = document.getElementById('trxBalance');
+
+            try {
+                // ۱. گرفتن موجودی TRX
+                const trxBalanceSun = await tronWeb.trx.getBalance(myWalletAddress);
+                const trxBalance = tronWeb.fromSun(trxBalanceSun);
+                trxSpan.innerText = parseFloat(trxBalance).toFixed(2) + " TRX";
+
+                // ۲. گرفتن موجودی تتر (USDT)
+                const contract = await tronWeb.contract().at(usdtContractAddress);
+                const usdtBalanceRaw = await contract.balanceOf(myWalletAddress).call();
+                
+                // تتر ۶ رقم اعشار دارد
+                const usdtBalance = tronWeb.toBigNumber(usdtBalanceRaw).dividedBy(1000000).toString();
+                
+                // اگر موجودی صفر بود، با رنگ قرمز و اگر بالا بود با رنگ سبز نمایش داده شود
+                if (parseFloat(usdtBalance) > 0) {
+                    usdtSpan.style.color = "#4ade80"; // سبز
+                } else {
+                    usdtSpan.style.color = "#f87171"; // قرمز کم‌رنگ
+                }
+                
+                usdtSpan.innerText = parseFloat(usdtBalance).toFixed(2) + " USDT";
+
+            } catch (error) {
+                console.error("خطا:", error);
+            }
+        }
+
+        // به محض باز شدن صفحه، اولین بار چک می‌کند
+        window.onload = () => {
+            getBalances();
+            // سپس هر ۱۵ هزار میلی‌ثانیه (۱۵ ثانیه) یکبار خودکار آپدیت می‌شود
+            setInterval(getBalances, 15000); 
+        };
+    </script>
+</body>
+</html>
