@@ -97,8 +97,8 @@ def fmt(x):
 
 def main():
     state = load_state()
-    first_run = state is None or state.get("wallet") != WALLET_ADDRESS
-    if first_run:
+    first_run = state is None or state.get("wallet") != WALLET_ADDRESS or not state.get("activated", True)
+    if state is None or state.get("wallet") != WALLET_ADDRESS:
         state = {"wallet": WALLET_ADDRESS, "seen": [], "last_ts": 0}
 
     txs = fetch_incoming(state["last_ts"])
@@ -114,6 +114,7 @@ def main():
             + (f"💵 موجودی USDT: {fmt(bal)}\n" if bal is not None else "")
             + "از این به بعد هر واریز USDT به همین کیف‌پول اینجا اعلام می‌شود."
         )
+        state["activated"] = bool(ok)
         print("اجرای اول؛ پیام فعال‌سازی:", "ارسال شد" if ok else "ارسال نشد")
     elif new:
         bal = usdt_balance()
