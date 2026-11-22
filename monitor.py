@@ -97,7 +97,7 @@ def fmt(x):
 
 def main():
     state = load_state()
-    first_run = state is None or state.get("wallet") != WALLET_ADDRESS or not state.get("activated", True)
+    first_run = state is None or state.get("wallet") != WALLET_ADDRESS or not state.get("activated", False)
     if state is None or state.get("wallet") != WALLET_ADDRESS:
         state = {"wallet": WALLET_ADDRESS, "seen": [], "last_ts": 0}
 
